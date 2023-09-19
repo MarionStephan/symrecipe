@@ -6,11 +6,16 @@
 {% block body %}
 	<div class="container">
 		<h1 class="mt-4">Formulaire de connexion</h1>
-        {% if error %}
-        <div class="alert alert-dismissible alert-primary">
-        <div>{{ error.messageKey|trans(error.messageData, 'security') }}</div>
-    </div>
-        {% endif %}
+		{% for message in app.flashes('success') %}
+			<div class="alert alert-success mt-4">
+				{{ message }}
+			</div>
+		{% endfor %}
+		{% if error %}
+			<div class="alert alert-dismissible alert-primary">
+				<div>{{ error.messageKey|trans(error.messageData, 'security') }}</div>
+			</div>
+		{% endif %}
 		<form action="{{path('security.login')}}" method='post'>
 			<div class="form-group">
 				<label for="username" class="form-label mt-4">Adresse email</label>
@@ -18,9 +23,9 @@
 			</div>
 			<div class="form-group">
 				<label for="password" class="form-label mt-4">Mot de passe</label>
-				<input type="password" class="form-control" id="password" name="_password" placeholder="*********" >
+				<input type="password" class="form-control" id="password" name="_password" placeholder="*********">
 			</div>
-            <button type="submit" class='btn btn-primary mt-4'>Se connecter</button>
+			<button type="submit" class='btn btn-primary mt-4'>Se connecter</button>
 		</form>
 	</div>
 {% endblock %}
