@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 class RecipeController extends AbstractController
 {
@@ -23,13 +24,14 @@ class RecipeController extends AbstractController
      * @return Response
      */
     #[Route('/recette', name: 'recipe.index', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
     public function index(
         RecipeRepository $repository,
         PaginatorInterface $paginator,
         Request $request
     ): Response {
         $recipes = $paginator->paginate(
-            $repository->findAll(),
+            $repository->findBy(['user' => $this->getUser()]),
             $request->query->getInt('page', 1),
             10
         );
@@ -47,13 +49,7 @@ class RecipeController extends AbstractController
      * @return Response
      */
     #[Route('/recette/creation', 'recipe.new', methods: ['GET', 'POST'])]
-    /**
-     * This controller allow us to create a new recipe
-     *
-     * @param Request $request
-     * @param EntityManagerInterface $manager
-     * @return Response
-     */
+    #[IsGranted('ROLE_USER')]
     public function new(Request $request, EntityManagerInterface $manager): Response
     {
         $recipe = new Recipe();
@@ -62,6 +58,7 @@ class RecipeController extends AbstractController
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
             $recipe = $form->getData();
+            $recipe->setUser($this->getUser());
             $manager->persist($recipe);
             $manager->flush();
 
@@ -89,6 +86,9 @@ class RecipeController extends AbstractController
      */
     public function edit(Recipe $recipe, Request $request, EntityManagerInterface $manager): Response
     {
+        if ($this->getUser() !== $recipe->getUser() || !$this->isGranted('ROLE_USER')) {
+            throw $this->createAccessDeniedException();
+        }
         $form = $this->createForm(RecipeType::class, $recipe);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
@@ -116,6 +116,10 @@ class RecipeController extends AbstractController
     #[Route('/recette/suppression/{id}', 'recipe.delete', methods: ['GET'])]
     public function delete(EntityManagerInterface $manager, Recipe $recipe): Response
     {
+        if ($this->getUser() !== $recipe->getUser() || !$this->isGranted('ROLE_USER')) {
+            throw $this->createAccessDeniedException();
+        }
+
         $manager->remove($recipe);
         $manager->flush();
         $this->addFlash(
